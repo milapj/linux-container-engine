@@ -74,10 +74,20 @@ child_exec (void * arg)
         // FILL ME IN: our parent should now have set things up properly
         // We need to:
         // (1) change our root to the new directory for the image
-	char * img = hkr_get_img(p->img);
-	chroot(img);	
+	printf("%s %s\n",p->cmd, p->img);
+	char * img = hkr_get_img_path();
+	//printf("%s\n",img);
+	//strcat("/",img);
+	//strcat(img,p->img);
+	//printf("%s\n",img);
+	char * full_img_path = (char *)malloc(1 + strlen(img) + strlen(p->img));
+	strcpy(full_img_path,img);
+	strcat(full_img_path,"/");
+	strcat(full_img_path,p->img);
+	printf("%s\n",full_img_path);
+	chroot(full_img_path);	
         // (2) actually move into that root
-	chdir(img);
+	chdir(full_img_path);
         // (3) change our hostname
 	sethostname(DEFAULT_HOSTNAME,sizeof(DEFAULT_HOSTNAME));
         // (4) execute the command that the user gave us
@@ -273,12 +283,12 @@ death_handler (int sig)
 }
 
 static void
-handle_setgroups_file() {
+handle_setgroups_file(pid_t pid) {
 	int sg;
 	char setgroup_filename[50];
 	strcpy(setgroup_filename, "/proc/");
 	char pid_buf[50];
-        sprintf(pid_buf,"%d",child_pid);
+        sprintf(pid_buf,"%d",pid);
 	strcat(setgroup_filename,pid_buf);
 	strcat(setgroup_filename, "/setgroups");
 	sg = open(setgroup_filename, O_RDWR);
@@ -301,7 +311,7 @@ handle_setgroups_file() {
 }
 
 static void
-handle_child_mapping(char * map_filename) {
+handle_child_mapping(char * map_filename, pid_t pid) {
 	int fd;
 	//int sg = 0;
 	//map_size = DEFAULT_MAP;
@@ -312,7 +322,7 @@ handle_child_mapping(char * map_filename) {
 	//char uid_map[50] = "/uid_map";
 	//char gid_map[50] = "/gid_map";
 	char pid_buf[50];
-	sprintf(pid_buf,"%d",child_pid);
+	sprintf(pid_buf,"%d",pid);
 	strcat(filename, pid_buf);
 	//strcat(setgroup_filename, pid_buf);
 	//strcat(setgroup_filename, "/setgroups");
@@ -327,7 +337,7 @@ handle_child_mapping(char * map_filename) {
 		printf("setgroups file opened\n");
 	}
 	
-	if(write(sg,"deny",sizeof("deny")) != sizeof("deny")) {
+	if(write(sg,"allow",sizeof("allow")) != sizeof("allow")) {
 		fprintf(stderr, "write %s: %s\n",filename, strerror(errno));
                 exit(EXIT_FAILURE);
 	}
@@ -423,9 +433,9 @@ main (int argc, char **argv)
                 exit(EXIT_FAILURE);
         }
         set_child_pid(pid);
-	handle_setgroups_file();
-	handle_child_mapping("/uid_map");
-        handle_child_mapping("/gid_map");
+	handle_child_mapping("/uid_map",pid);
+	handle_setgroups_file(pid);
+        handle_child_mapping("/gid_map",pid);
 	// FILL ME IN: we have to setup the PID namespace now
         // This will involve writing /proc/<PID>/uid_map, gid_map
 		
