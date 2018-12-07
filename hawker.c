@@ -87,11 +87,12 @@ child_exec (void * arg)
 	printf("%s\n",full_img_path);
 	chroot(full_img_path);	
         // (2) actually move into that root
-	chdir(full_img_path);
+	chdir("/");
         // (3) change our hostname
-	sethostname(DEFAULT_HOSTNAME,sizeof(DEFAULT_HOSTNAME));
+	sethostname(DEFAULT_HOSTNAME,strlen(DEFAULT_HOSTNAME));
         // (4) execute the command that the user gave us
-	execvp(img,p->argv);
+	printf("%s\n",p->argv[0]);
+	execvp(p->argv[0],p->argv);
 	printf("End of Child Function reached\n");
 	exit(EXIT_FAILURE);
 }
@@ -299,7 +300,7 @@ handle_setgroups_file(pid_t pid) {
                 printf("setgroups file opened\n");
         }
 
-        if(write(sg,"deny",sizeof("deny")) != sizeof("deny")) {
+        if(write(sg,"deny",strlen("deny")) != strlen("deny")) {
                 fprintf(stderr, "write %s: %s\n",setgroup_filename, strerror(errno));
                 exit(EXIT_FAILURE);
         }
@@ -349,7 +350,7 @@ handle_child_mapping(char * map_filename, pid_t pid) {
 	if(fd == -1) {
 		printf("Could not open file: %s\n", filename);
 	}
-	if(write(fd, DEFAULT_MAP, sizeof(DEFAULT_MAP)) != sizeof(DEFAULT_MAP)) {
+	if(write(fd, DEFAULT_MAP, strlen(DEFAULT_MAP)) != strlen(DEFAULT_MAP)) {
 		fprintf(stderr, "write %s: %s\n",filename, strerror(errno));
 		exit(EXIT_FAILURE);
 		//printf("Could not write in file: %s\n",filename);
