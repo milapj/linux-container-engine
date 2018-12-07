@@ -53,7 +53,7 @@ child_exec (void * arg)
 {
         struct parms *p           = (struct parms*)arg;
         char c;
-
+	printf("Entered Child Functoin\n");
         // if our parent dies and doesn't kill us
         // explicitly, we should also die, instead of hanging
         // around. Note that this is not POSIX-compliant, 
@@ -82,6 +82,7 @@ child_exec (void * arg)
 	sethostname(DEFAULT_HOSTNAME,sizeof(DEFAULT_HOSTNAME));
         // (4) execute the command that the user gave us
 	execvp(img,p->argv);
+	printf("End of Child Function reached\n");
 	exit(EXIT_FAILURE);
 }
 
