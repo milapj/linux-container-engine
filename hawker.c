@@ -433,29 +433,108 @@ main (int argc, char **argv)
         // passed to us in p.cpu_pct and p.mem_limit, and
         // translate those into the cgroup file entries
         int cpu_limit_user = p.cpu_pct;
-	printf("CPU LIMIT: %d\n",cpu_limit_user);
 	long mem_limit_user = p.mem_limit;
-	int fd;
+
 	char full_path[100] = "/sys/fs/cgroup/cpuacct/hawker/";
+	
 	char pid_buf[50]; 
 	sprintf(pid_buf,"%d", pid);
 	strcat(full_path,pid_buf);
-	printf("%s\n",full_path);
+	
+	char full_path_cpu_1[100];
+	strcpy(full_path_cpu_1, full_path);
+	
+	char full_path_cpu_2[100];
+	strcpy(full_path_cpu_2, full_path);
+
+	char full_path_cpu_tasks[100];
+	strcpy(full_path_cpu_tasks, full_path);
+	
 	char path_cpu_1[50] = "/cpu.cfs_quota_us";
-	//char tmp[50] = "/test_hawker";
-	//strcat(full_path, tmp);
-	//printf("%s\n", full_path);
-	strcat(full_path, path_cpu_1);
-	fd = open(full_path, O_RDWR);
-	if(fd == -1) {
-		printf("File could not be opened\n");
-	}
-	char tmp[50];
-	sprintf(tmp, "%d", cpu_limit_user);
-	if(write(fd, tmp, sizeof(tmp) != sizeof(tmp))) {
-			printf("File Writing Failed\n");
-	}
-	close(fd);
+	strcat(full_path_cpu_1, path_cpu_1);
+	printf("CPU path 1: %s\n",full_path_cpu_1);
+
+	char path_cpu_2[50] = "/cpu.cfs_period_us";
+	strcat(full_path_cpu_2, path_cpu_2);
+	printf("CPU Path 2: %s\n", full_path_cpu_2);
+
+	char path_cpu_tasks[50] = "/tasks";
+	strcat(full_path_cpu_tasks, path_cpu_tasks);
+	
+
+
+	char cmd[100];
+	char buf_cpu[100];
+	strcpy(cmd, "echo ");
+	sprintf(buf_cpu, "%d", cpu_limit_user * 1000);
+
+	//sprintf(cmd, "%d", cpu_limit_user * 1000);
+	strcat(cmd,buf_cpu);
+	strcat(cmd, " > ");
+	
+	char cmd_1[100];
+	strcpy(cmd_1, cmd);
+	
+	char cmd_2[100];
+	strcpy(cmd_2,cmd);
+
+	char cmd_3[100];
+	char buf_cpu_task[50];
+	sprintf(buf_cpu_task, "%d",getpid());
+	strcpy(cmd_3,"echo ");
+	strcat(cmd_3, buf_cpu_task);
+	strcat(cmd_3, " > ");
+	strcat(cmd_3, full_path_cpu_tasks);
+
+	strcat(cmd_1, full_path_cpu_1);
+	strcat(cmd_2, full_path_cpu_2);
+	system(cmd_1);
+	system(cmd_2);
+	system(cmd_3);
+	printf("%s\n", cmd_1);
+	printf("%s\n", cmd_2);
+	printf("%s\n", cmd_3);
+	
+	
+	char full_path_memory[100] = "/sys/fs/cgroup/memory/hawker/";
+	strcat(full_path_memory, pid_buf);
+	
+	char full_path_memory_1[100];
+	strcpy(full_path_memory_1, full_path_memory);
+	
+	char full_path_memory_tasks[100];
+	strcpy(full_path_memory_tasks, full_path_memory);
+
+	char path_memory_tasks[50] = "/tasks";
+	strcat(full_path_memory_tasks, path_memory_tasks);
+
+	char path_memory[50] = "/memory.limit_in_bytes";
+	strcat(full_path_memory_1, path_memory);
+
+	char cmd_mem[50];
+	strcpy(cmd_mem, "echo ");
+	char buf_mem[50];
+	sprintf(buf_mem, "%ld", mem_limit_user);
+	strcat(cmd_mem, buf_mem);
+	strcat(cmd_mem, " > ");
+
+
+	char cmd_mem_tasks[50];
+	char buf_mem_tasks[50];
+	sprintf(buf_mem_tasks, "%d",getpid());
+	strcpy(cmd_mem_tasks, "echo ");
+	strcat(cmd_mem_tasks, buf_mem_tasks);
+	strcat(cmd_mem_tasks, " > ");
+	
+
+	strcat(cmd_mem_tasks, full_path_memory_tasks);
+	strcat(cmd_mem, full_path_memory_1);
+	printf("%s\n", cmd_mem);
+	printf("%s\n", cmd_mem_tasks);	
+	system(cmd_mem);
+	system(cmd_mem_tasks);
+
+
         // we hang up both ends of the pipe to let the child
         // know that we've written the appropriate files. It 
         // can then continue. Note that we could also do this
