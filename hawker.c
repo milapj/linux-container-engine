@@ -1,4 +1,4 @@
-/* 
+/* /
  * This file is part of the Hawker container engine developed by
  * the HExSA Lab at Illinois Institute of Technology.
  *
@@ -53,7 +53,7 @@ child_exec (void * arg)
 {
         struct parms *p           = (struct parms*)arg;
         char c;
-	printf("Entered Child Functoin\n");
+	printf("Entered Child Function\n");
         // if our parent dies and doesn't kill us
         // explicitly, we should also die, instead of hanging
         // around. Note that this is not POSIX-compliant, 
@@ -76,10 +76,6 @@ child_exec (void * arg)
         // (1) change our root to the new directory for the image
 	printf("%s %s\n",p->cmd, p->img);
 	char * img = hkr_get_img_path();
-	//printf("%s\n",img);
-	//strcat("/",img);
-	//strcat(img,p->img);
-	//printf("%s\n",img);
 	char * full_img_path = (char *)malloc(1 + strlen(img) + strlen(p->img));
 	strcpy(full_img_path,img);
 	strcat(full_img_path,"/");
@@ -93,7 +89,7 @@ child_exec (void * arg)
         // (4) execute the command that the user gave us
 	printf("%s\n",p->argv[0]);
 	execvp(p->argv[0],p->argv);
-	printf("End of Child Function reached\n");
+	//printf("End of Child Function reached\n";
 	exit(EXIT_FAILURE);
 }
 
@@ -314,38 +310,14 @@ handle_setgroups_file(pid_t pid) {
 static void
 handle_child_mapping(char * map_filename, pid_t pid) {
 	int fd;
-	//int sg = 0;
-	//map_size = DEFAULT_MAP;
 	char filename[64];
-	//char setgroup_filename[50];
 	strcpy(filename, "/proc/");
-	//strcpy(setgroup_filename, "/proc/");
-	//char uid_map[50] = "/uid_map";
-	//char gid_map[50] = "/gid_map";
 	char pid_buf[50];
 	sprintf(pid_buf,"%d",pid);
 	strcat(filename, pid_buf);
-	//strcat(setgroup_filename, pid_buf);
-	//strcat(setgroup_filename, "/setgroups");
 	strcat(filename, map_filename);
         //printf("%s",filename);
 	
-	/*sg = open(setgroup_filename, O_RDWR);
-	if(sg == -1) {
-		printf("Could not open file\n");
-	}
-	else {
-		printf("setgroups file opened\n");
-	}
-	
-	if(write(sg,"allow",sizeof("allow")) != sizeof("allow")) {
-		fprintf(stderr, "write %s: %s\n",filename, strerror(errno));
-                exit(EXIT_FAILURE);
-	}
-	else {
-		printf("setgroups file written\n");
-	}*/
-
 	fd = open(filename, O_RDWR);
 	if(fd == -1) {
 		printf("Could not open file: %s\n", filename);
@@ -413,6 +385,9 @@ main (int argc, char **argv)
         // malloc() is of course easier, but mmap() gives us more control
         // over the characteristics of that memory.
 	child_stack = malloc(stk_sz);
+	if(child_stack == NULL) {
+		printf("Could not allocate memory\n");
+	}
         // FILL ME IN: remove this when you get a stack setup
         //exit(EXIT_SUCCESS);
 
@@ -434,6 +409,7 @@ main (int argc, char **argv)
                 exit(EXIT_FAILURE);
         }
         set_child_pid(pid);
+	printf("%d\n",pid);
 	handle_child_mapping("/uid_map",pid);
 	handle_setgroups_file(pid);
         handle_child_mapping("/gid_map",pid);
@@ -456,7 +432,30 @@ main (int argc, char **argv)
         // memory it can use (in bytes). We use the values
         // passed to us in p.cpu_pct and p.mem_limit, and
         // translate those into the cgroup file entries
-            
+        int cpu_limit_user = p.cpu_pct;
+	printf("CPU LIMIT: %d\n",cpu_limit_user);
+	long mem_limit_user = p.mem_limit;
+	int fd;
+	char full_path[100] = "/sys/fs/cgroup/cpuacct/hawker/";
+	char pid_buf[50]; 
+	sprintf(pid_buf,"%d", pid);
+	strcat(full_path,pid_buf);
+	printf("%s\n",full_path);
+	char path_cpu_1[50] = "/cpu.cfs_quota_us";
+	//char tmp[50] = "/test_hawker";
+	//strcat(full_path, tmp);
+	//printf("%s\n", full_path);
+	strcat(full_path, path_cpu_1);
+	fd = open(full_path, O_RDWR);
+	if(fd == -1) {
+		printf("File could not be opened\n");
+	}
+	char tmp[50];
+	sprintf(tmp, "%d", cpu_limit_user);
+	if(write(fd, tmp, sizeof(tmp) != sizeof(tmp))) {
+			printf("File Writing Failed\n");
+	}
+	close(fd);
         // we hang up both ends of the pipe to let the child
         // know that we've written the appropriate files. It 
         // can then continue. Note that we could also do this
